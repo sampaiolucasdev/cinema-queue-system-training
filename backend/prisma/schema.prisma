@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Movie {
+  id          String    @id @default(uuid())
+  title       String
+  duration    Int       // Duração em minutos
+  sessions    Session[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("movies")
+}
+
+model Session {
+  id           String    @id @default(uuid())
+  movieId      String
+  movie        Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  startTime    DateTime
+  totalSeats   Int       // Ex: 50 assentos disponíveis no total
+  tickets      Ticket[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("sessions")
+}
+
+model Ticket {
+  id           String       @id @default(uuid())
+  sessionId    String
+  session      Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seatNumber   Int          // Ex: Assento 12
+  status       TicketStatus @default(PENDING)
+  userId       String       // Identificação simples do usuário que comprou/reservou
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([sessionId, seatNumber]) // Garante que o mesmo assento não pode ter dois registros na mesma sessão
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  PENDING     // Reservado temporariamente (aguardando pagamento ou expiração)
+  CONFIRMED   // Comprado com sucesso
+  CANCELED    // Cancelado
+}
